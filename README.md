@@ -1,5 +1,7 @@
 # Mehrkriterien-Routing – zwei Kosten, keine beste Route – Streamlit-Demo
 
+**[→ Demo live ausprobieren](https://sebastianhanisch-multicriteria-demo.streamlit.app/)**
+
 Achtes und **letztes Stück der Kürzeste-Wege-Linie** der "Konzepte"-Reihe für die Website "Sebastian Hanisch – Operations Research und Machine Learning", dritter Ast von [Dijkstra](../dijkstra-demo):
 anders als die Fall-Demos im Portfolio (ein Anwendungsfall, mehrere Verfahren im Vergleich) zeigt diese Demo **ein** Verfahren – das **Label-setting für die Pareto-Front** – an einem wachsenden Beispiel.
 Dijkstra vergleicht Kosten mit "kleiner". Mit **zwei** Kosten – Fahrzeit und CO₂ – gibt es diese Ordnung nicht: die schnellste Route ist selten die sauberste. Die Antwort ist eine **Pareto-Front**, und an die Stelle von "kleiner" tritt die **Dominanz**:
