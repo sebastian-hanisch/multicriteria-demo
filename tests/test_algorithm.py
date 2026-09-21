@@ -86,6 +86,8 @@ def test_bounds_and_budget_do_not_change_the_answer_and_never_generate_more(n, m
     plain = alg.pareto_labels(g, 0, n - 1)
     fast = alg.pareto_labels(g, 0, n - 1, prune="bounds")
     assert _front(fast) == _front(plain) and fast.counters["generated"] <= plain.counters["generated"]
+    star = alg.pareto_labels(g, 0, n - 1, prune="astar")
+    assert _front(star) == _front(plain) and star.counters["generated"] <= plain.counters["generated"]
     front = _front(plain)
     if len(front) > 1:
         b = front[len(front) // 2][1]
@@ -93,6 +95,7 @@ def test_bounds_and_budget_do_not_change_the_answer_and_never_generate_more(n, m
         assert _front(capped) == [p for p in front if p[1] <= b] and capped.counters["generated"] <= plain.counters["generated"]
         both = alg.pareto_labels(g, 0, n - 1, prune="bounds", budget=b)
         assert _front(both) == _front(capped)
+        assert _front(alg.pareto_labels(g, 0, n - 1, prune="astar", budget=b)) == _front(capped)
 
 
 def test_counters_and_events_are_consistent():
@@ -142,10 +145,13 @@ def test_edge_cases_same_node_unreachable_zero_costs_parallel_arcs():
     assert _front(alg.pareto_labels(g, 0, 0)) == [(0.0, 0.0)]
     assert _front(alg.pareto_labels(g, 0, 3)) == [] and alg.weighted_sum(g, 0, 3)[0] == []
     assert _front(alg.pareto_labels(g, 0, 2)) == [(1.0, 5.0), (3.0, 1.0)]                    # zwei Parallelkanten, Nullkanten und ein Nullzyklus stören nicht
+    for prune in ("bounds", "astar"):                                                        # dieselben Grenzfälle mit Schranken (Ziel unerreichbar: Start wird sofort verworfen)
+        assert _front(alg.pareto_labels(g, 0, 0, prune=prune)) == [(0.0, 0.0)] and _front(alg.pareto_labels(g, 0, 3, prune=prune)) == []
+        assert _front(alg.pareto_labels(g, 0, 2, prune=prune)) == [(1.0, 5.0), (3.0, 1.0)]
     one = from_arcs(3, [(0, 1, 2.0, 0.0), (1, 2, 3.0, 0.0)], np.zeros((3, 2)), directed=True)
     assert _front(alg.pareto_labels(one, 0, 2)) == [(5.0, 0.0)]                             # ein Kostenvektor mit einer Null-Kostenart: die Front hat einen Punkt
 
 
 def test_unknown_prune_is_rejected():
     with pytest.raises(ValueError):
-        alg.pareto_labels(_random_graph(4, 6, 1), 0, 3, prune="astar")
+        alg.pareto_labels(_random_graph(4, 6, 1), 0, 3, prune="greedy")

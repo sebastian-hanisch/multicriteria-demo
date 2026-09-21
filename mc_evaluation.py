@@ -33,13 +33,14 @@ def analyse(net):
     pts, runs = alg.weighted_sum(g, net.source, net.target)
     t_ws = time.perf_counter() - t0
     bounded = alg.pareto_labels(g, net.source, net.target, prune="bounds")
+    astar = alg.pareto_labels(g, net.source, net.target, prune="astar")
     front = res.front()
     hull = alg.hull([(t, c) for t, c, _ in front])
     hull_set = set(hull)
     fast, clean = front[0], front[-1]
     m = {"n": g.n, "m": g.m // (1 if g.directed else 2), "front": len(front), "hull": len(hull), "unsupported": sum(1 for t, c, _ in front if (t, c) not in hull_set),
          "generated": res.counters["generated"], "settled": res.counters["settled"], "dominated": res.counters["dominated"], "ws_runs": runs, "ws_points": len(pts), "ws_matches_hull": pts == hull,
-         "generated_bounds": bounded.counters["generated"], "pruned_bounds": bounded.counters["pruned_bounds"],
+         "generated_bounds": bounded.counters["generated"], "pruned_bounds": bounded.counters["pruned_bounds"], "generated_astar": astar.counters["generated"],
          "fast_t": fast[0], "fast_c": fast[1], "clean_t": clean[0], "clean_c": clean[1],
          "price_fast": fast[1] / clean[1] - 1.0 if clean[1] > 0 else float("nan"), "price_clean": clean[0] / fast[0] - 1.0 if fast[0] > 0 else float("nan"),
          "events": len(res.events), "dominated_events": sum(1 for _, k in res.events if k == "dominated")} if front else {"front": 0}
@@ -175,11 +176,20 @@ def budget_curve(side=12, conflict=1.0, percents=(0, 10, 25, 50, 75, 100), seeds
     return rows
 
 
-def bounds_effect(side=20, conflict=1.0, seeds=C.SWEEP_SEEDS):
-    """Schranken zum Ziel (Vorgriff auf A*): erzeugte Labels mit und ohne (Mittel über die Sweep-Netze)."""
-    plain, fast = [], []
-    for sd in seeds:
-        net = make_network("city", side=side, conflict=conflict, seed=sd)
-        plain.append(alg.pareto_labels(net.graph, net.source, net.target).counters["generated"])
-        fast.append(alg.pareto_labels(net.graph, net.source, net.target, prune="bounds").counters["generated"])
-    return {"plain": float(np.mean(plain)), "bounds": float(np.mean(fast))}
+def astar_rows(sides=(8, 12, 16, 20), conflict=1.0, seeds=C.SWEEP_SEEDS, random_nodes=200):
+    """Erzeugte Labels je Ordnung der Warteschlange (Mittel über die Sweep-Netze): Dijkstra-Ordnung ohne Schranken, mit Schranken zum Ziel, A*-Ordnung mit Schranken - Stadtnetze und zum Vergleich ein gegenläufiges Zufallsnetz.
+    Alle drei liefern in jedem Lauf dieselbe Front (geprüft); die Schranken selbst (zwei Dijkstra-Läufe auf dem umgedrehten Graphen) sind nicht mitgezählt."""
+    cases = [(f"Stadtnetz {side} × {side}", lambda sd, side=side: make_network("city", side=side, conflict=conflict, seed=sd)) for side in sides]
+    if random_nodes:
+        cases.append((f"Zufallsnetz {random_nodes} Knoten, gegenläufig", lambda sd: make_network("random", nodes=random_nodes, corr=-1.0, seed=sd)))
+    rows = []
+    for label, build in cases:
+        acc = []
+        for sd in seeds:
+            net = build(sd)
+            runs = {p: alg.pareto_labels(net.graph, net.source, net.target, prune=p) for p in alg.PRUNES}
+            fronts = {p: [(t, c) for t, c, _ in r.front()] for p, r in runs.items()}
+            assert fronts["bounds"] == fronts["dominance"] == fronts["astar"]
+            acc.append({p: r.counters["generated"] for p, r in runs.items()} | {"front": len(fronts["astar"])})
+        rows.append({"label": label, **_mean(acc)})
+    return rows

@@ -202,12 +202,12 @@ def test_unknown_net_in_the_permalink_falls_back_to_the_default():
 def test_experiments_run_on_demand():
     at = _run()
     assert not any("Mittel über 5 Netze" in c.value for c in at.caption)
-    for key in ("front_start", "missed_start", "chain_start", "budget_start"):
+    for key in ("front_start", "missed_start", "chain_start", "budget_start", "astar_start"):
         at.button(key=key).click()
         at.run()
         assert not at.exception, (key, [e.value for e in at.exception])
     text = " ".join(c.value for c in at.caption)
-    for needle in ("Die Front wächst mit der Netzgröße und mit der Gegenläufigkeit", "findet nur die Ecken der Konvexhülle", "die Front verdoppelt sich mit jedem Glied", "Die Schranken zum Ziel (Vorgriff auf A*) sparen dagegen fast nichts"):
+    for needle in ("Die Front wächst mit der Netzgröße und mit der Gegenläufigkeit", "findet nur die Ecken der Konvexhülle", "die Front verdoppelt sich mit jedem Glied", "sparen in den Stadtnetzen nichts", "die Ersparnis **schrumpft mit der Größe**"):
         assert needle in text, needle
 
 
@@ -227,7 +227,7 @@ def test_every_plotly_chart_has_an_explicit_key_and_axes_are_locked():
     calls = _calls(APP.read_text(encoding="utf-8"), "plotly_chart")
     keys = [re.search(r'key=f?"([a-z_]+?)(?:_\{\w+\})?"', c).group(1) for c in calls]
     # Karte und Front stehen in der Play-Schleife: ihre Schlüssel tragen den Schritt
-    assert sorted(keys) == sorted(["net_chart", "front_chart", "front_size_chart", "front_corr_chart", "missed_chart", "chain_chart", "budget_chart"]), keys
+    assert sorted(keys) == sorted(["net_chart", "front_chart", "front_size_chart", "front_corr_chart", "missed_chart", "chain_chart", "budget_chart", "astar_chart"]), keys
     assert sum('key=f"' in c for c in calls) == 2 and all('_{current}"' in c for c in calls if 'key=f"' in c)
     viz = (ROOT / "mc_visualization.py").read_text(encoding="utf-8")
     assert "fixedrange=True" in viz and viz.count("_base(fig") >= 5

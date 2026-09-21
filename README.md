@@ -20,7 +20,7 @@ bfs-demo (Wurzel: Kanten zählen, nicht Kosten)                                 
 | Bestandteil | Quelle |
 |---|---|
 | Verfahren (Label-setting, Dominanz, Pareto-Front) | Hansen (1980) und Martins (1984); die Bücher (*Grokking Algorithms*, *Optimization Algorithms*) behandeln Pareto nur bei evolutionären Verfahren, ein Routing-Beispiel gibt es nicht zu spiegeln |
-| Umsetzung, Schranken zum Ziel, Budget, gewichtete Summe (dichotom), Konvexhülle, Bildfolge | eigen |
+| Umsetzung, Schranken zum Ziel, A*-Ordnung (nach NAMOA*, Ulloa et al. 2020), Budget, gewichtete Summe (dichotom), Konvexhülle, Bildfolge | eigen |
 | Alle Netze | **eigene Graphen und Erzeuger**: kleines Netz mit vier Front-Routen, Stadtnetz mit schnellen, schmutzigen Hauptachsen, Zufallsnetz mit Korrelation, Worst-Case-Kette |
 | Zahlen | **eigene Messungen** an diesen Netzen |
 
@@ -37,7 +37,7 @@ Aus den Büchern stammt keine Zahl, kein Graph und kein Text. **Kein OpenStreetM
 | Was die gewichtete Summe verpasst | ❌ im Stadtnetz **69 %** (8 × 8), **80 %** (12 × 12), **83 %** (20 × 20: 15.2 von 91.8 Punkten, 29 Dijkstra-Läufe); im gegenläufigen Zufallsnetz 41 %; bei unabhängigen Kosten **0 %** |
 | Worst-Case-Kette | ❌ die Front **verdoppelt sich mit jedem Glied**: *k* = 4 / 8 / 12 → **16 / 256 / 4 096** Punkte, 61 / 1 021 / 16 381 Labels; die gewichtete Summe findet nur die 2 Extreme (bei 8 Gliedern 2 von 256, 99.2 % verpasst) |
 | CO₂-Budget (Stadtnetz 12 × 12, Mittel über 5 Netze) | ✅ bei 50 % der Spanne **21 %** weniger Labels (2 890 statt 3 669), bei 10 % nur 641 (die Front im Budget hat 8 von 47.6 Punkten); je knapper das Budget, desto langsamer die schnellste Route im Budget |
-| Schranken zum Ziel (Vorgriff auf A\*) | ⚠️ ändern die Front nie, **sparen aber fast nichts**: im 20 × 20-Netz 23 888.6 statt 23 889.8 Labels (vermutlich, weil das Ziel erst spät erreicht wird; nicht getrennt geprüft) |
+| Schranken zum Ziel und A\*-Ordnung | ⚠️ ändern die Front nie (in jedem Lauf geprüft). **Allein** sparen die Schranken im Stadtnetz nichts (Dijkstra-Ordnung erreicht das Ziel spät). In **A\*-Ordnung** (Warteschlange nach Kosten plus Schranke, NAMOA\*/BOA\*) sparen sie **51 / 48 / 39 / 36 %** der Labels im 8 × 8 / 12 × 12 / 16 × 16 / 20 × 20-Stadtnetz (die Ersparnis schrumpft, weil die Front von 21 auf 92 Punkte wächst) und **89 %** im gegenläufigen Zufallsnetz (Schranken allein dort 14 %). Die Zähler enthalten die zwei Dijkstra-Läufe für die Schranken nicht |
 | Korrektheit | ✅ die Front stimmt auf jedem geprüften Netz mit einer **Brute-Force-Suche über alle Routen** und mit einem naiven Label-correcting ohne Ordnung überein; kein Front-Punkt dominiert einen anderen; die Ränder sind die beiden Einzelkriterium-Optima (Dijkstra); die gewichtete Summe findet **genau** die Ecken der unabhängig berechneten Konvexhülle; jede Route existiert im Netz mit den berichteten Kosten; die Kette hat exakt 2^*k* Punkte |
 
 Die Zähler (Labels, Dijkstra-Läufe) sind Schritte des Verfahrens und plattformfest. Laufzeiten stehen in der App nur als Messwerte (reines Python) und werden nirgends behauptet oder getestet.
@@ -46,7 +46,7 @@ Die Zähler (Labels, Dijkstra-Läufe) sind Schritte des Verfahrens und plattform
 
 1. **Mehrkriterien-Routing in Aktion** (Regler über die Label-Entnahmen + Abspielen): die Karte mit den Knoten nach der Zahl festgelegter Labels, die Front am Ziel als **Streudiagramm** (Zeit gegen CO₂; schwarze Rauten = Ecken der Hülle, orange hohle Kreise = nicht unterstützt, Konvexhülle gepunktet, Budget als Linie), die drei Routen (schnellste, sauberste, gewählte). Beim kleinen Netz zusätzlich die **Tabelle der Labels je Ort** (✓ festgelegt, ✗ dominiert).
 2. **Zwei Kosten – keine beste Route:** Front-Größe, Labels (erzeugt, festgelegt, dominiert), die Routen der gewichteten Summe, der Preis der schnellsten und der saubersten Route; je nach Anzeige die Front, die Ecken der Hülle oder die **schnellste Route mit CO₂-Budget** (aus der Front gelesen, mit dem Aufwand des Label-setting mit Budget verglichen).
-3. **Vergleich** (Expander); **Experimente auf Knopfdruck**: Front gegen Größe, Gegenläufigkeit und Korrelation; was die gewichtete Summe verpasst; die Worst-Case-Kette; das Budget (samt der Schranken zum Ziel).
+3. **Vergleich** (Expander); **Experimente auf Knopfdruck**: Front gegen Größe, Gegenläufigkeit und Korrelation; was die gewichtete Summe verpasst; die Worst-Case-Kette; das Budget; Schranken zum Ziel und A*-Ordnung.
 4. **Wo die Annahmen enden** (Tabelle; Bezug zu NSGA-II der Populations-Linie) und **Mathematische Formulierung** (Dominanz, Korrektheit über das Optimalitätsprinzip für Vektorkosten, Konvexhülle und unterstützte Punkte, Kette, RCSP, Aufwand als Lehrbuchwert gekennzeichnet).
 
 Bedienung: Beispielnetz per Schnellstart-Knopf laden oder in der Seitenleiste Netz und Regler wählen; Anzeige (Front / gewichtete Summe / Budget), Frontpunkt und Budget erscheinen nur, wenn die Front mehr als einen Punkt hat (sonst steht dort, dass es nur einen Kompromiss gibt). Die Adresszeile spiegelt die Konfiguration (Permalink). Höchstens 400 Knoten.
@@ -57,7 +57,7 @@ Bedienung: Beispielnetz per Schnellstart-Knopf laden oder in der Seitenleiste Ne
 |---|---|
 | `app.py` | Streamlit-Oberfläche |
 | `mc_graph.py`, `mc_queues.py` | Graph in CSR-Form mit zwei Kostenarten, Warteschlange |
-| `mc_algorithm.py` | Label-setting (Dominanz, Schranken, Budget), gewichtete Summe (dichotom), Konvexhülle, Abfrage der Front, naive Referenzen |
+| `mc_algorithm.py` | Label-setting (Dominanz, Schranken, A*-Ordnung, Budget), gewichtete Summe (dichotom), Konvexhülle, Abfrage der Front, naive Referenzen |
 | `mc_scenario.py` | Netze: kleines Netz, Stadtnetz mit Hauptachsen, Zufallsnetz mit Korrelation, Kette |
 | `mc_evaluation.py` | Kennzahlen, Bildfolge, Experimente |
 | `mc_visualization.py`, `mc_presets.py`, `mc_constants.py` | Abbildungen, Presets und Permalink, Konstanten |

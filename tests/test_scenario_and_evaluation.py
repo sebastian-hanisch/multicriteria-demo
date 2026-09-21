@@ -87,7 +87,7 @@ def test_analysis_invariants_for_every_net(key):
     a = ev.analyse(net)
     m = a.metrics
     assert m["front"] == len(a.front) >= 1 and m["ws_matches_hull"] and m["hull"] == len(a.hull) and m["unsupported"] == m["front"] - sum(1 for t, c, _ in a.front if (t, c) in set(a.hull))
-    assert m["settled"] <= m["generated"] and m["generated_bounds"] <= m["generated"] and m["events"] == len(a.res.events) and m["ws_points"] == m["hull"]
+    assert m["settled"] <= m["generated"] and m["generated_bounds"] <= m["generated"] and m["generated_astar"] <= m["generated_bounds"] and m["events"] == len(a.res.events) and m["ws_points"] == m["hull"]
     ts = [t for t, _, _ in a.front]
     assert ts == sorted(ts) and (m["fast_t"], m["clean_c"]) == (a.front[0][0], a.front[-1][1])
     assert ev.verdict(a) == ("single" if m["front"] == 1 else "front")
@@ -176,5 +176,10 @@ def test_budget_curve_rows_and_bounds_effect():
     rows = ev.budget_curve(side=8, percents=(0, 50, 100), seeds=C.SWEEP_SEEDS[:2])
     assert rows[0]["generated"] < rows[1]["generated"] < rows[2]["generated"] <= rows[2]["full"] and rows[0]["front_in_budget"] == 1 and rows[2]["front_in_budget"] == rows[2]["front"]
     assert rows[0]["time"] > rows[2]["time"]
-    b = ev.bounds_effect(side=8, seeds=C.SWEEP_SEEDS[:2])
-    assert b["bounds"] <= b["plain"] and b["bounds"] > 0.99 * b["plain"]
+
+
+def test_astar_rows_have_one_row_per_net_and_the_astar_order_never_generates_more_than_the_plain_order():
+    rows = ev.astar_rows(sides=(6, 8), seeds=C.SWEEP_SEEDS[:2], random_nodes=60)
+    assert [r["label"] for r in rows] == ["Stadtnetz 6 × 6", "Stadtnetz 8 × 8", "Zufallsnetz 60 Knoten, gegenläufig"]
+    assert all(r["astar"] <= r["bounds"] <= r["dominance"] for r in rows) and rows[1]["astar"] < 0.7 * rows[1]["dominance"]
+    assert len(ev.astar_rows(sides=(6,), seeds=C.SWEEP_SEEDS[:1], random_nodes=0)) == 1

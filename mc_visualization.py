@@ -192,3 +192,14 @@ def build_budget(rows, height=320):
     fig.add_trace(go.Scatter(x=x, y=[r["full"] for r in rows], mode="lines", name="ohne Budget", line=dict(color="#111111", dash="dash")))
     fig.update_layout(xaxis_title="Budget in % der Spanne zwischen sauberster (0) und schnellster Route (100)", yaxis_title="erzeugte Labels")
     return _base(fig, height)
+
+
+def build_astar(rows, height=320):
+    """Erzeugte Labels in % der Dijkstra-Ordnung: nur Schranken gegen A*-Ordnung mit Schranken."""
+    fig = go.Figure()
+    x = [r["label"] for r in rows]
+    fig.add_trace(go.Bar(x=x, y=[100 * r["bounds"] / r["dominance"] for r in rows], name="Dijkstra-Ordnung + Schranken", marker_color="#7f7f7f"))
+    fig.add_trace(go.Bar(x=x, y=[100 * r["astar"] / r["dominance"] for r in rows], name="A*-Ordnung + Schranken", marker_color="#2ca02c"))
+    fig.add_hline(y=100, line=dict(color="#111111", dash="dash"))
+    fig.update_layout(yaxis_title="erzeugte Labels in % der Dijkstra-Ordnung ohne Schranken", barmode="group")
+    return _base(fig, height)

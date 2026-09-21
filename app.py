@@ -28,6 +28,7 @@ from mc_presets import (
 )
 from mc_scenario import make_network
 from mc_visualization import (
+    build_astar,
     build_budget,
     build_chain,
     build_front,
@@ -86,7 +87,12 @@ def _chain():
 
 @st.cache_data(show_spinner=False)
 def _budget():
-    return ev.budget_curve(), ev.bounds_effect()
+    return ev.budget_curve()
+
+
+@st.cache_data(show_spinner=False)
+def _astar():
+    return ev.astar_rows()
 
 
 st.title("🌿 Mehrkriterien-Routing – zwei Kosten, keine beste Route")
@@ -315,10 +321,10 @@ st.markdown("---")
 # --- Vergleich -------------------------------------------------------------------------------------------------------------------------------------
 
 with st.expander("🔧 Wie wir das erreichen – Label-setting und gewichtete Summe im Vergleich"):
-    st.table({"Verfahren": ["Label-setting (die ganze Front)", "Label-setting mit Schranken zum Ziel", "Gewichtete Summe (dichotom)"], "Zähler": [f"{_num(m['generated'])} Labels", f"{_num(m['generated_bounds'])} Labels", f"{m['ws_runs']} Dijkstra-Läufe"],
-              "Laufzeit [ms]": [f"{a.seconds['labels'] * 1000:.1f}", "–", f"{a.seconds['ws'] * 1000:.1f}"]})
-    st.caption("Die Laufzeiten sind Messwerte dieses Laufs (reines Python, ein Lauf, schwankend). Die Schranken zum Ziel (kürzeste Zeit und kürzestes CO₂ von jedem Knoten zum Ziel, ein Vorgriff auf A*) verwerfen Labels, deren bestmögliches Ende schon von einem Ziel-Label dominiert wird - "
-               "sie ändern die Front nicht (in jedem Lauf geprüft), sparen aber fast nichts (siehe Experiment zum Budget).")
+    st.table({"Verfahren": ["Label-setting (die ganze Front)", "Label-setting mit Schranken zum Ziel", "Label-setting in A*-Ordnung", "Gewichtete Summe (dichotom)"], "Zähler": [f"{_num(m['generated'])} Labels", f"{_num(m['generated_bounds'])} Labels", f"{_num(m['generated_astar'])} Labels", f"{m['ws_runs']} Dijkstra-Läufe"],
+              "Laufzeit [ms]": [f"{a.seconds['labels'] * 1000:.1f}", "–", "–", f"{a.seconds['ws'] * 1000:.1f}"]})
+    st.caption("Die Laufzeiten sind Messwerte dieses Laufs (reines Python, ein Lauf, schwankend). Die Schranken zum Ziel (kürzeste Zeit und kürzestes CO₂ von jedem Knoten zum Ziel, zwei Dijkstra-Läufe auf dem umgedrehten Graphen, nicht mitgezählt) verwerfen Labels, deren bestmögliches Ende schon von einem Ziel-Label dominiert wird. "
+               "Die A*-Ordnung (NAMOA*, Ulloa et al. 2020) entnimmt die Labels nach Kosten plus Schranke statt nach den bisherigen Kosten. Beide ändern die Front nicht (in jedem Lauf geprüft); was sie sparen, zeigt das Experiment zu den Schranken.")
 
 st.markdown("---")
 
@@ -377,14 +383,29 @@ if st.button("Budget gegen Aufwand messen (dauert einen Moment)", key="budget_st
     st.session_state["budget_on"] = True
 if st.session_state.get("budget_on"):
     with st.spinner("Rechne 6 Budgets × 5 Netze ..."):
-        brows, beff = _budget()
+        brows = _budget()
     c1, c2 = st.columns([3, 2])
     c1.plotly_chart(build_budget(brows), width="stretch", key="budget_chart")
     c2.table({"Budget [%]": [str(r["percent"]) for r in brows], "Front im Budget": [f"{r['front_in_budget']:.1f}" for r in brows], "Zeit [s]": [f"{r['time']:.0f}" for r in brows]})
     half = brows[3]
     st.caption(f"Stadtnetz 12 × 12 (Hauptachsen doppelt so schmutzig), Mittel über 5 Netze. Je knapper das Budget, desto weniger Labels bleiben übrig: bei 50 % der Spanne {half['generated']:.0f} statt {half['full']:.0f} ({1 - half['generated'] / half['full']:.0%} weniger), bei 10 % nur {brows[1]['generated']:.0f}; die Front im Budget enthält dann {brows[1]['front_in_budget']:.0f} von {brows[1]['front']:.0f} Punkten. "
-               f"Die schnellste Route im Budget wird mit weniger Budget langsamer ({brows[-1]['time']:.0f} s ohne Beschränkung, {brows[0]['time']:.0f} s bei der saubersten Route). Die Schranken zum Ziel (Vorgriff auf A*) sparen dagegen fast nichts: im 20 × 20-Netz {beff['bounds']:.0f} statt {beff['plain']:.0f} Labels - "
-               "vermutlich, weil das Ziel erst spät erreicht wird, wenn fast alle Labels schon erzeugt sind (nicht getrennt geprüft).")
+               f"Die schnellste Route im Budget wird mit weniger Budget langsamer ({brows[-1]['time']:.0f} s ohne Beschränkung, {brows[0]['time']:.0f} s bei der saubersten Route).")
+
+st.markdown("---")
+
+st.subheader("🔬 Schranken zum Ziel und A*-Ordnung")
+if st.button("Ordnungen der Warteschlange vergleichen (dauert einen Moment)", key="astar_start"):
+    st.session_state["astar_on"] = True
+if st.session_state.get("astar_on"):
+    with st.spinner("Rechne 5 Netzgrößen × 5 Netze × 3 Verfahren ..."):
+        arows = _astar()
+    c1, c2 = st.columns([3, 2])
+    c1.plotly_chart(build_astar(arows), width="stretch", key="astar_chart")
+    c2.table({"Netz": [r["label"].replace("Stadtnetz ", "").replace("Zufallsnetz 200 Knoten, gegenläufig", "Zufall") for r in arows], "Dijkstra": [_num(r["dominance"]) for r in arows], "A*": [_num(r["astar"]) for r in arows]})
+    city = arows[:-1]
+    st.caption(f"Erzeugte Labels, Mittel über 5 Netze (Stadtnetze mit doppelt so schmutzigen Hauptachsen). Schranken zum Ziel **allein** sparen in den Stadtnetzen nichts (höchstens {max(1 - r['bounds'] / r['dominance'] for r in city):.2%}): die Labels werden nach ihren bisherigen Kosten entnommen, das Ziel wird erst spät erreicht, und bis dahin ist fast alles erzeugt. "
+               f"In **A\\*-Ordnung** (nach Kosten plus Schranke) kommt das Ziel früh, und die Schranken wirken: {1 - city[0]['astar'] / city[0]['dominance']:.0%} weniger Labels im 8 × 8-Netz, {1 - city[-1]['astar'] / city[-1]['dominance']:.0%} im 20 × 20-Netz - die Ersparnis **schrumpft mit der Größe**, weil die Front (im Mittel {city[0]['front']:.0f} gegen {city[-1]['front']:.0f} Punkte) mitwächst und jede Front-Route ihre Labels braucht. "
+               f"Im gegenläufigen Zufallsnetz (kleine Front, {arows[-1]['front']:.1f} Punkte) sind es {1 - arows[-1]['astar'] / arows[-1]['dominance']:.0%} weniger, die Schranken allein {1 - arows[-1]['bounds'] / arows[-1]['dominance']:.0%}. Die Front ist in jedem Lauf dieselbe.")
 
 st.markdown("---")
 
@@ -396,6 +417,7 @@ st.markdown(
 | Annahme | Was passiert, wenn sie verletzt ist | Wer setzt an |
 |---|---|---|
 | **Die Front bleibt klein** | Sie wächst mit dem Netz und mit der Gegenläufigkeit (Stadtnetz 20 × 20: im Mittel 92 Punkte) und im Schlimmsten Fall exponentiell (Kette mit 12 Gliedern: 4 096 Punkte, 16 381 Labels). | ε-Fronten (Näherung, Literatur), CO₂-Budget |
+| **Blindes Suchen genügt** | Bei einem festen Ziel spart die A*-Ordnung im Stadtnetz 36–51 % der Labels, die Schranken allein nichts; die Ersparnis schrumpft mit der Größe, die Front bleibt dieselbe. | NAMOA*, BOA* |
 | **Eine gewichtete Summe genügt** | Sie findet nur die Ecken der Konvexhülle: im 20 × 20-Stadtnetz etwa 15 von 92 Punkten, in der Kette 2 von 256. | Label-setting |
 | **Nur zwei additive Kosten** | Mehr Kosten heißt höhere Dimension und größere Fronten; nicht additive Größen (Zeitfenster, Batterieladung) brauchen Ressourcenverlängerungsfunktionen (Literatur, nicht gebaut). | Resource-Constrained Shortest Path |
 | **Die Kosten ändern sich nicht** | Ändert sich der Verkehr, muss die Front neu berechnet werden; Vorberechnungen wie Contraction Hierarchies gibt es für mehrere Kosten nur in aufwendigen Varianten (Literatur). | (nicht gebaut) |

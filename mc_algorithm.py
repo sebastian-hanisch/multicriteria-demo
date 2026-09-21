@@ -17,7 +17,7 @@ import numpy as np
 from mc_graph import route_cost
 
 INF = float("inf")
-PRUNES = ("dominance", "bounds")
+PRUNES = ("dominance", "bounds", "astar")
 
 
 @dataclass
@@ -90,6 +90,7 @@ def target_bounds(g, target):
 def pareto_labels(g, s, target=None, prune="dominance", budget=None):
     """Alle nicht dominierten Labels von s aus (bei gegebenem Ziel: nur die für das Ziel wichtigen, mit den Schranken aus `prune`).
     prune="dominance": nur die Dominanz der Labels desselben Knotens; "bounds": zusätzlich Schranken zum Ziel (ein Label fällt weg, wenn schon ein Ziel-Label sein bestmögliches Ende dominiert).
+    prune="astar": wie "bounds", aber die Warteschlange ordnet nach (Zeit + Schranke, CO2 + Schranke) statt nach den bisherigen Kosten (NAMOA*/BOA*, Ulloa et al. 2020) - das Ziel wird früh erreicht, und die Schranken wirken.
     budget: höchstens so viel CO2 (Labels darüber fallen weg, mit Schranke zum Ziel, wenn ein Ziel gegeben ist)."""
     if prune not in PRUNES:
         raise ValueError(prune)
@@ -98,7 +99,8 @@ def pareto_labels(g, s, target=None, prune="dominance", budget=None):
     wt, wc = g.weight.tolist(), g.weight2.tolist()
     res = ParetoResult(int(s), None if target is None else int(target))
     res.counters = {"generated": 0, "settled": 0, "dominated": 0, "pruned_bounds": 0, "pruned_budget": 0}
-    use_bounds = target is not None and (prune == "bounds" or budget is not None)
+    use_bounds = target is not None and (prune in ("bounds", "astar") or budget is not None)
+    astar = prune == "astar" and target is not None
     lbt = lbc = None
     if use_bounds:
         lbt, lbc = target_bounds(g, int(target))
@@ -112,7 +114,7 @@ def pareto_labels(g, s, target=None, prune="dominance", budget=None):
             return True
         if budget is not None and c + lbc[v] > budget:
             return "budget"
-        if prune == "bounds" and front_t:
+        if prune in ("bounds", "astar") and front_t:
             i = bisect.bisect_right(front_t, t + lbt[v]) - 1
             if i >= 0 and front_c[i] <= c + lbc[v]:
                 return "bounds"
@@ -127,11 +129,16 @@ def pareto_labels(g, s, target=None, prune="dominance", budget=None):
         return len(res.lab_node) - 1
 
     start = new_label(int(s), 0.0, 0.0, -1, -1)
-    heap = [(0.0, 0.0, start)]
+
+    def key(v, t, c, lid):
+        """Ordnung der Warteschlange: nach den bisherigen Kosten, bei A* nach den Kosten plus der Schranke zum Ziel (die Schranken sind konsistent, also bleibt die Dominanzprüfung je Knoten gültig)."""
+        return (t + lbt[v], c + lbc[v], lid) if astar else (t, c, lid)
+
+    heap = [key(int(s), 0.0, 0.0, start)]
     res.counters["generated"] = 1
     while heap:
-        t, c, lid = heapq.heappop(heap)
-        v = res.lab_node[lid]
+        lid = heapq.heappop(heap)[2]
+        v, t, c = res.lab_node[lid], res.lab_t[lid], res.lab_c[lid]
         if best_c[v] <= c:
             res.counters["dominated"] += 1
             res.events.append((lid, "dominated"))
@@ -164,7 +171,7 @@ def pareto_labels(g, s, target=None, prune="dominance", budget=None):
                     continue
             nid = new_label(w, nt, nc, lid, k)
             res.counters["generated"] += 1
-            heapq.heappush(heap, (nt, nc, nid))
+            heapq.heappush(heap, key(w, nt, nc, nid))
     return res
 
 

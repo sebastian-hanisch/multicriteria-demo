@@ -101,13 +101,26 @@ def test_chain_of_twelve_links_table_numbers():
 
 
 def test_budget_claims():
-    rows, eff = ev.budget_curve(), ev.bounds_effect()
+    rows = ev.budget_curve()
     by = {r["percent"]: r for r in rows}
     assert by[50]["generated"] == pytest.approx(2890.0, abs=0.5) and by[50]["full"] == pytest.approx(3668.6, abs=0.5) and 1 - by[50]["generated"] / by[50]["full"] == pytest.approx(0.21, abs=0.005)
     assert by[10]["generated"] == pytest.approx(640.6, abs=0.5) and by[10]["front_in_budget"] == pytest.approx(8.0, abs=0.05) and by[10]["front"] == pytest.approx(47.6, abs=0.05)
     assert by[0]["front_in_budget"] == 1.0 and by[100]["front_in_budget"] == by[100]["front"]
     assert [by[p]["time"] for p in (0, 10, 25, 50, 75, 100)] == sorted([by[p]["time"] for p in (0, 10, 25, 50, 75, 100)], reverse=True)               # mehr Budget, schnellere Route
-    assert eff["plain"] == pytest.approx(23889.8, abs=0.5) and eff["bounds"] == pytest.approx(23888.6, abs=0.5) and eff["bounds"] > 0.999 * eff["plain"]            # die Schranken sparen fast nichts
+
+
+def test_bounds_alone_save_nothing_but_the_astar_order_makes_them_work():
+    rows = {r["label"]: r for r in ev.astar_rows()}                                                   # jeder Lauf prüft schon: alle drei Ordnungen liefern dieselbe Front
+    city = [rows[f"Stadtnetz {s} × {s}"] for s in (8, 12, 16, 20)]
+    assert [r["dominance"] for r in city] == pytest.approx([788.6, 3668.6, 10761.2, 23889.8], abs=0.05)
+    assert all(r["bounds"] > 0.999 * r["dominance"] for r in city)                                     # Schranken allein: nichts (Dijkstra-Ordnung erreicht das Ziel spät)
+    assert [1 - r["astar"] / r["dominance"] for r in city] == pytest.approx([0.514, 0.479, 0.388, 0.364], abs=0.002)
+    assert [r["front"] for r in city] == pytest.approx([21.4, 47.6, 71.2, 91.8], abs=0.05)
+    saving = [1 - r["astar"] / r["dominance"] for r in city]
+    assert saving == sorted(saving, reverse=True)                                                      # die Ersparnis schrumpft mit der Größe
+    rnd = rows["Zufallsnetz 200 Knoten, gegenläufig"]
+    assert (rnd["dominance"], rnd["bounds"], rnd["astar"], rnd["front"]) == pytest.approx((602.0, 518.0, 67.0, 4.4), abs=0.05)
+    assert 1 - rnd["bounds"] / rnd["dominance"] == pytest.approx(0.14, abs=0.005) and 1 - rnd["astar"] / rnd["dominance"] == pytest.approx(0.889, abs=0.002)
 
 
 def test_fronts_never_depend_on_bounds_or_budget_pruning_in_the_presets():
@@ -115,6 +128,7 @@ def test_fronts_never_depend_on_bounds_or_budget_pruning_in_the_presets():
         _, net, a = _preset(key)
         fast = alg.pareto_labels(net.graph, net.source, net.target, prune="bounds")
         assert [(t, c) for t, c, _ in fast.front()] == [(t, c) for t, c, _ in a.front], key
+        assert [(t, c) for t, c, _ in alg.pareto_labels(net.graph, net.source, net.target, prune="astar").front()] == [(t, c) for t, c, _ in a.front], key
     _, net, a = _preset("city")
     b = ev.budget_for(a, 30)
     assert [(t, c) for t, c, _ in ev.budget_run(net, b).front()] == [(t, c) for t, c, _ in a.front if c <= b]
