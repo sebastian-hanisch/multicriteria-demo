@@ -24,6 +24,7 @@ from mc_presets import (
     init_session_state_defaults,
     load_permalink_settings,
     randomize_seed,
+    seed_widget,
     sync_query_params,
 )
 from mc_scenario import make_network
@@ -142,9 +143,11 @@ with st.sidebar:
         help="Klein und fest (vier Front-Routen), erzeugt (Stadtnetz mit Hauptachsen, Zufallsnetz mit Korrelation) oder die Worst-Case-Kette (2^k Front-Routen). Zeit in Sekunden bzw. Minuten, CO₂ in Gramm, alle Kosten ganze Zahlen; höchstens 400 Knoten.",
     )
     if net_key == "city":
+        seed_widget("side_slider")
         side = st.slider("Kreuzungen je Seite", *bounds("side_slider"), key="side_slider",
                          help="Größe des Rasters: n = Seite² Knoten. Punkte der Front am Ziel (Mittel über fünf Netze, Hauptachsen doppelt so schmutzig) bei 6 / 10 / 20 Kreuzungen je Seite: 11.8 / 34.0 / 91.8.")
         st.session_state[KEPT["side_slider"]] = side
+        seed_widget("conflict_slider")
         conflict = st.slider("Gegenläufigkeit (Zusatz-CO₂ der Hauptachse)", *bounds("conflict_slider"), key="conflict_slider", step=0.1,
                              help="Um wie viel schmutziger die schnelle Hauptachse je km ist (1 = doppelt so viel CO₂ wie die Nebenstraße). Punkte der Front im 10 × 10-Netz bei 0 / 0.5 / 1: 11.4 / 28.2 / 34.0 - mit 0 ist die Hauptachse nur schneller, nicht schmutziger.")
         st.session_state[KEPT["conflict_slider"]] = conflict
@@ -152,10 +155,13 @@ with st.sidebar:
         side = int(st.session_state.get(KEPT["side_slider"], C.DEFAULT_SIDE))
         conflict = float(st.session_state.get(KEPT["conflict_slider"], C.DEFAULT_CONFLICT))
     if net_key == "random":
+        seed_widget("nodes_slider")
         nodes = st.slider("Knoten", *bounds("nodes_slider"), key="nodes_slider", step=10, help="Anzahl der Knoten n.")
         st.session_state[KEPT["nodes_slider"]] = nodes
+        seed_widget("degree_slider")
         degree = st.slider("Mittlerer Grad", *bounds("degree_slider"), key="degree_slider", step=0.5, help="Kanten je Knoten.")
         st.session_state[KEPT["degree_slider"]] = degree
+        seed_widget("corr_slider")
         corr = st.slider("Korrelation der Kosten je Kante", *bounds("corr_slider"), key="corr_slider", step=0.25,
                          help="−1 = gegenläufig (was schnell ist, ist schmutzig), +1 = gleichläufig (beide Kosten gleich). Punkte der Front (200 Knoten, Grad 3, Mittel über fünf Netze) bei −1 / −0.5 / 0 / 0.5 / 1: 4.4 / 2.2 / 2.0 / 1.6 / 1.0.")
         st.session_state[KEPT["corr_slider"]] = corr
@@ -164,12 +170,14 @@ with st.sidebar:
         degree = float(st.session_state.get(KEPT["degree_slider"], C.DEFAULT_DEGREE))
         corr = float(st.session_state.get(KEPT["corr_slider"], C.DEFAULT_CORR))
     if net_key == "chain":
+        seed_widget("links_slider")
         links = st.slider("Glieder der Kette k", *bounds("links_slider"), key="links_slider",
                           help="Jedes Glied hat zwei Wege, (2^i s, 0 g) gegen (0 s, 2^i g). Die Front hat 2^k Punkte: bei k = 4 / 8 / 12 sind es 16 / 256 / 4 096, das Label-setting erzeugt dabei 61 / 1 021 / 16 381 Labels.")
         st.session_state[KEPT["links_slider"]] = links
     else:
         links = int(st.session_state.get(KEPT["links_slider"], C.DEFAULT_LINKS))
     if net_key in ("city", "random"):
+        seed_widget("seed_input")
         seed = st.number_input("Zufalls-Seed", *bounds("seed_input"), key="seed_input", step=1)
         st.session_state[KEPT["seed_input"]] = seed
         st.button("🎲 Neues Netz generieren", width="stretch", on_click=randomize_seed, help="Würfelt einen neuen Zufalls-Seed für das Netz.")
@@ -204,6 +212,7 @@ if st.session_state.get("mc_owner") != view_key:
 mode = "front"
 with st.sidebar:
     if F > 1:
+        seed_widget("mode_select")
         mode = st.selectbox("Anzeige", C.MODES, key="mode_select", format_func=lambda k: C.MODE_LABELS[k],
                             help="Pareto-Front: alle Kompromisse, eine Route wählbar. Gewichtete Summe: nur die Ecken der Konvexhülle, die eine gewichtete Summe aus Zeit und CO₂ finden kann. Budget: die schnellste Route mit höchstens B Gramm CO₂.")
         st.session_state[KEPT["mode_select"]] = mode
