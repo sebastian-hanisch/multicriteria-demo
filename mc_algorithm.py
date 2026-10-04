@@ -90,7 +90,7 @@ def target_bounds(g, target):
 def pareto_labels(g, s, target=None, prune="dominance", budget=None):
     """Alle nicht dominierten Labels von s aus (bei gegebenem Ziel: nur die für das Ziel wichtigen, mit den Schranken aus `prune`).
     prune="dominance": nur die Dominanz der Labels desselben Knotens; "bounds": zusätzlich Schranken zum Ziel (ein Label fällt weg, wenn schon ein Ziel-Label sein bestmögliches Ende dominiert).
-    prune="astar": wie "bounds", aber die Warteschlange ordnet nach (Zeit + Schranke, CO2 + Schranke) statt nach den bisherigen Kosten (NAMOA*/BOA*, Ulloa et al. 2020) - das Ziel wird früh erreicht, und die Schranken wirken.
+    prune="astar": wie "bounds", aber die Warteschlange ordnet nach (Zeit + Schranke, CO2 + Schranke) statt nach den bisherigen Kosten (NAMOA*/BOA*, Hernández Ulloa et al. 2020) - das Ziel wird früh erreicht, und die Schranken wirken.
     budget: höchstens so viel CO2 (Labels darüber fallen weg, mit Schranke zum Ziel, wenn ein Ziel gegeben ist)."""
     if prune not in PRUNES:
         raise ValueError(prune)

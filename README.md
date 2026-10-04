@@ -26,7 +26,7 @@ bfs-demo (Wurzel: Kanten zählen, nicht Kosten)                                 
 | Bestandteil | Quelle |
 |---|---|
 | Verfahren (Label-setting, Dominanz, Pareto-Front) | Hansen (1980) und Martins (1984); die Bücher (*Grokking Algorithms*, *Optimization Algorithms*) behandeln Pareto nur bei evolutionären Verfahren, ein Routing-Beispiel gibt es nicht zu spiegeln |
-| Umsetzung, Schranken zum Ziel, A*-Ordnung (nach NAMOA*, Mandow und Pérez de la Cruz 2005, und BOA*, Ulloa et al. 2020), Budget, gewichtete Summe (dichotom), Konvexhülle, Bildfolge | eigen |
+| Umsetzung, Schranken zum Ziel, A*-Ordnung (nach NAMOA*, Mandow und Pérez de la Cruz 2005, und BOA*, Hernández Ulloa et al. 2020), Budget, gewichtete Summe (dichotom), Konvexhülle, Bildfolge | eigen |
 | Alle Netze | **eigene Graphen und Erzeuger**: kleines Netz mit vier Front-Routen, Stadtnetz mit schnellen, schmutzigen Hauptachsen, Zufallsnetz mit Korrelation, Worst-Case-Kette |
 | Zahlen | **eigene Messungen** an diesen Netzen |
 

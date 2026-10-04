@@ -333,7 +333,7 @@ with st.expander("🔧 Wie wir das erreichen – Label-setting und gewichtete Su
     st.table({"Verfahren": ["Label-setting (die ganze Front)", "Label-setting mit Schranken zum Ziel", "Label-setting in A*-Ordnung", "Gewichtete Summe (dichotom)"], "Zähler": [f"{_num(m['generated'])} Labels", f"{_num(m['generated_bounds'])} Labels", f"{_num(m['generated_astar'])} Labels", f"{m['ws_runs']} Dijkstra-Läufe"],
               "Laufzeit [ms]": [f"{a.seconds['labels'] * 1000:.1f}", "–", "–", f"{a.seconds['ws'] * 1000:.1f}"]})
     st.caption("Die Laufzeiten sind Messwerte dieses Laufs (reines Python, ein Lauf, schwankend). Die Schranken zum Ziel (kürzeste Zeit und kürzestes CO₂ von jedem Knoten zum Ziel, zwei Dijkstra-Läufe auf dem umgedrehten Graphen, nicht mitgezählt) verwerfen Labels, deren bestmögliches Ende schon von einem Ziel-Label dominiert wird. "
-               "Die A*-Ordnung (NAMOA*, Mandow und Pérez de la Cruz 2005; BOA*, Ulloa et al. 2020) entnimmt die Labels nach Kosten plus Schranke statt nach den bisherigen Kosten. Beide ändern die Front nicht (in jedem Lauf geprüft); was sie sparen, zeigt das Experiment zu den Schranken.")
+               "Die A*-Ordnung (NAMOA*, Mandow und Pérez de la Cruz 2005; BOA*, Hernández Ulloa et al. 2020) entnimmt die Labels nach Kosten plus Schranke statt nach den bisherigen Kosten. Beide ändern die Front nicht (in jedem Lauf geprüft); was sie sparen, zeigt das Experiment zu den Schranken.")
 
 st.markdown("---")
 
