@@ -2,7 +2,7 @@
 Sebastian Hanisch - Operations Research und Machine Learning
 
 Anders als die Fall-Demos im Portfolio (ein Anwendungsfall, mehrere Verfahren im Vergleich) zeigt diese Demo EIN Verfahren - das Label-setting für die Pareto-Front - und lässt stattdessen das Beispiel wachsen.
-Achtes und letztes Stück der Kürzeste-Wege-Linie der "Konzepte"-Reihe, dritter Ast von Dijkstra: mit zwei Kosten (Zeit und CO2) gibt es keine beste Route mehr, sondern eine Pareto-Front.
+Achtes Stück der Kürzeste-Wege-Linie der "Konzepte"-Reihe, dritter Ast von Dijkstra: mit zwei Kosten (Zeit und CO2) gibt es keine beste Route mehr, sondern eine Pareto-Front.
 Siehe README für die Einordnung.
 
 Lauffähig mit: streamlit run app.py
@@ -105,7 +105,7 @@ Praktisch fragt man dann: "die schnellste Route mit höchstens *B* Gramm CO₂" 
 """
 )
 st.caption(
-    "Anders als die Fall-Demos im Portfolio, die an einem Anwendungsfall mehrere Verfahren vergleichen, zeigt diese Demo - achtes und letztes Stück der Kürzeste-Wege-Linie der \"Konzepte\"-Reihe, dritter Ast von Dijkstra - **ein** Verfahren an einem wachsenden Beispiel. "
+    "Anders als die Fall-Demos im Portfolio, die an einem Anwendungsfall mehrere Verfahren vergleichen, zeigt diese Demo - achtes Stück der Kürzeste-Wege-Linie der \"Konzepte\"-Reihe, dritter Ast von Dijkstra - **ein** Verfahren an einem wachsenden Beispiel. "
     "Die Schwäche des Verfahrens: die Front kann sehr groß werden (im Schlimmsten Fall exponentiell), und eine gewichtete Summe aus beiden Kosten findet nicht alle ihrer Punkte. Das Verfahren geht auf Hansen (1980) und Martins (1984) zurück; "
     "alle Netze und Zahlen dieser Demo sind eigene Graphen und Messungen."
 )
@@ -333,7 +333,7 @@ with st.expander("🔧 Wie wir das erreichen – Label-setting und gewichtete Su
     st.table({"Verfahren": ["Label-setting (die ganze Front)", "Label-setting mit Schranken zum Ziel", "Label-setting in A*-Ordnung", "Gewichtete Summe (dichotom)"], "Zähler": [f"{_num(m['generated'])} Labels", f"{_num(m['generated_bounds'])} Labels", f"{_num(m['generated_astar'])} Labels", f"{m['ws_runs']} Dijkstra-Läufe"],
               "Laufzeit [ms]": [f"{a.seconds['labels'] * 1000:.1f}", "–", "–", f"{a.seconds['ws'] * 1000:.1f}"]})
     st.caption("Die Laufzeiten sind Messwerte dieses Laufs (reines Python, ein Lauf, schwankend). Die Schranken zum Ziel (kürzeste Zeit und kürzestes CO₂ von jedem Knoten zum Ziel, zwei Dijkstra-Läufe auf dem umgedrehten Graphen, nicht mitgezählt) verwerfen Labels, deren bestmögliches Ende schon von einem Ziel-Label dominiert wird. "
-               "Die A*-Ordnung (NAMOA*, Ulloa et al. 2020) entnimmt die Labels nach Kosten plus Schranke statt nach den bisherigen Kosten. Beide ändern die Front nicht (in jedem Lauf geprüft); was sie sparen, zeigt das Experiment zu den Schranken.")
+               "Die A*-Ordnung (NAMOA*, Mandow und Pérez de la Cruz 2005; BOA*, Ulloa et al. 2020) entnimmt die Labels nach Kosten plus Schranke statt nach den bisherigen Kosten. Beide ändern die Front nicht (in jedem Lauf geprüft); was sie sparen, zeigt das Experiment zu den Schranken.")
 
 st.markdown("---")
 
@@ -353,7 +353,7 @@ if st.session_state.get("front_on"):
     big = [r for r in frows if r["side"] == 20]
     zero, one = big[0], big[-1]
     st.caption(f"Mittel über 5 Netze; Start unten links, Ziel oben rechts (Stadtnetz) bzw. der am weitesten entfernte Knoten (Zufallsnetz). Im 20 × 20-Stadtnetz hat die Front {zero['front']:.0f} Punkte, wenn die Hauptachse nur schneller ist, und {one['front']:.0f}, wenn sie doppelt so schmutzig ist; "
-               f"die Hülle bleibt bei {one['hull']:.0f} Ecken. Die Front wächst mit der Netzgröße und mit der Gegenläufigkeit. Im Zufallsnetz schrumpft sie mit der Korrelation von {crows[0]['front']:.1f} (gegenläufig) auf {crows[-1]['front']:.1f} (gleichläufig): "
+               f"die Hülle wächst dabei nur von {zero['hull']:.0f} auf {one['hull']:.0f} Ecken. Die Front wächst mit der Netzgröße und mit der Gegenläufigkeit. Im Zufallsnetz schrumpft sie mit der Korrelation von {crows[0]['front']:.1f} (gegenläufig) auf {crows[-1]['front']:.1f} (gleichläufig): "
                "laufen beide Kosten gleich, gibt es keinen Kompromiss.")
 
 st.markdown("---")
@@ -429,11 +429,11 @@ st.markdown(
 | **Blindes Suchen genügt** | Bei einem festen Ziel spart die A*-Ordnung im Stadtnetz 36–51 % der Labels, die Schranken allein nichts; die Ersparnis schrumpft mit der Größe, die Front bleibt dieselbe. | NAMOA*, BOA* |
 | **Eine gewichtete Summe genügt** | Sie findet nur die Ecken der Konvexhülle: im 20 × 20-Stadtnetz etwa 15 von 92 Punkten, in der Kette 2 von 256. | Label-setting |
 | **Nur zwei additive Kosten** | Mehr Kosten heißt höhere Dimension und größere Fronten; nicht additive Größen (Zeitfenster, Batterieladung) brauchen Ressourcenverlängerungsfunktionen (Literatur, nicht gebaut). | Resource-Constrained Shortest Path |
-| **Die Kosten ändern sich nicht** | Ändert sich der Verkehr, muss die Front neu berechnet werden; Vorberechnungen wie Contraction Hierarchies gibt es für mehrere Kosten nur in aufwendigen Varianten (Literatur). | (nicht gebaut) |
+| **Die Kosten ändern sich nicht** | Ändert sich der Verkehr, muss die Front neu berechnet werden; Vorberechnungen wie Contraction Hierarchies gibt es für mehrere Kosten nur in aufwendigen Varianten (Literatur). | Customizable CH, zeitabhängiges Routing (je für eine Kostenart) |
 | **Es muss exakt sein** | Evolutionäre Verfahren wie **NSGA-II** (Populations-Linie des Portfolios) berechnen Fronten nur näherungsweise, aber ohne die Größe der exakten Front bewältigen zu müssen. | NSGA-II |
 """
 )
-st.caption("Damit endet die Kürzeste-Wege-Linie. Gebaut sind: Breitensuche, Dijkstra, bidirektionale Suche, Contraction Hierarchies, Bellman-Ford, Floyd-Warshall, Johnson und Mehrkriterien-Routing.")
+st.caption("Die Kürzeste-Wege-Linie hat zwölf Stücke, alle gebaut: Breitensuche, Dijkstra, bidirektionale Suche, Contraction Hierarchies, Bellman-Ford, Floyd-Warshall, Johnson, Mehrkriterien-Routing, zeitabhängiges Routing, Hub Labeling, Customizable CH und RAPTOR.")
 
 st.markdown("---")
 
@@ -465,6 +465,6 @@ st.markdown("---")
 
 st.caption(
     "Diese Demo ist Teil des Portfolios von [Sebastian Hanisch](https://sebastianhanisch.net) – "
-    "Operations Research und Machine Learning. Interesse an einer maßgeschneiderten Lösung für "
-    "Ihr Unternehmen? [Kontakt aufnehmen](https://sebastianhanisch.net/kontakt.html)"
+    "Operations Research und Machine Learning ([Über mich](https://sebastianhanisch.net/ueber-mich.html)). "
+    "Mehr zur Reihe: [Kürzeste Wege: von der Breitensuche bis RAPTOR](https://sebastianhanisch.net/konzepte-kuerzeste-wege.html)."
 )

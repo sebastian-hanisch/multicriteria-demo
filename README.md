@@ -2,19 +2,23 @@
 
 **[→ Demo live ausprobieren](https://sebastianhanisch-multicriteria-demo.streamlit.app/)**
 
-Achtes und **letztes Stück der Kürzeste-Wege-Linie** der "Konzepte"-Reihe für die Website "Sebastian Hanisch – Operations Research und Machine Learning", dritter Ast von [Dijkstra](../dijkstra-demo):
+Achtes **Stück der Kürzeste-Wege-Linie** der "Konzepte"-Reihe für die Website "Sebastian Hanisch – Operations Research und Machine Learning", dritter Ast von [Dijkstra](../dijkstra-demo):
 anders als die Fall-Demos im Portfolio (ein Anwendungsfall, mehrere Verfahren im Vergleich) zeigt diese Demo **ein** Verfahren – das **Label-setting für die Pareto-Front** – an einem wachsenden Beispiel.
 Dijkstra vergleicht Kosten mit "kleiner". Mit **zwei** Kosten – Fahrzeit und CO₂ – gibt es diese Ordnung nicht: die schnellste Route ist selten die sauberste. Die Antwort ist eine **Pareto-Front**, und an die Stelle von "kleiner" tritt die **Dominanz**:
 eine Route dominiert eine andere, wenn sie in beiden Kosten höchstens so groß und in einer kleiner ist. Das Label-setting führt an jedem Knoten **alle nicht dominierten Labels** (Zeit, CO₂) mit. Die praktische Frage "die schnellste Route mit höchstens *B* Gramm CO₂" (Resource-Constrained Shortest Path) lässt sich aus der Front ablesen.
 
-**Einordnung in die Reihe (die Kanten des Graphen):** die Linie ist damit komplett.
+**Einordnung in die Reihe (die Kanten des Graphen):** die Linie wächst danach auf zwölf Stücke.
 ```
 bfs-demo (Wurzel: Kanten zählen, nicht Kosten)                                       [gebaut]
   └─ dijkstra-demo (Kosten korrekt, blind in alle Richtungen)                        [gebaut]
        ├─ bidirectional-demo → contraction-hierarchies-demo                          [gebaut]
+       │                         ├─ hub-labeling-demo (die Suche vorwegnehmen)       [gebaut]
+       │                         └─ customizable-ch-demo (Kosten wechseln)           [gebaut]
        ├─ bellman-ford-demo ─┐                                                       [gebaut]
        │   floyd-warshall-demo ─┴→ johnson-demo (Konvergenz: Umgewichtung)           [gebaut]
-       └─ multicriteria-demo (Zeit gegen CO₂, Pareto)                                [dieses Stück]
+       ├─ multicriteria-demo (Zeit gegen CO₂, Pareto) ──┐                            [dieses Stück]
+       ├─ time-dependent-demo (Kosten hängen von der Uhrzeit ab)                     [gebaut]
+       └─ raptor-demo (Fahrplan: Fahrten statt Kanten, Pareto aus Ankunft und Fahrten) [gebaut]
 ```
 
 ## Quellen
@@ -22,7 +26,7 @@ bfs-demo (Wurzel: Kanten zählen, nicht Kosten)                                 
 | Bestandteil | Quelle |
 |---|---|
 | Verfahren (Label-setting, Dominanz, Pareto-Front) | Hansen (1980) und Martins (1984); die Bücher (*Grokking Algorithms*, *Optimization Algorithms*) behandeln Pareto nur bei evolutionären Verfahren, ein Routing-Beispiel gibt es nicht zu spiegeln |
-| Umsetzung, Schranken zum Ziel, A*-Ordnung (nach NAMOA*, Ulloa et al. 2020), Budget, gewichtete Summe (dichotom), Konvexhülle, Bildfolge | eigen |
+| Umsetzung, Schranken zum Ziel, A*-Ordnung (nach NAMOA*, Mandow und Pérez de la Cruz 2005, und BOA*, Ulloa et al. 2020), Budget, gewichtete Summe (dichotom), Konvexhülle, Bildfolge | eigen |
 | Alle Netze | **eigene Graphen und Erzeuger**: kleines Netz mit vier Front-Routen, Stadtnetz mit schnellen, schmutzigen Hauptachsen, Zufallsnetz mit Korrelation, Worst-Case-Kette |
 | Zahlen | **eigene Messungen** an diesen Netzen |
 
@@ -72,3 +76,7 @@ streamlit run app.py
 ```
 
 Tests: `pip install -r requirements-dev.txt` und `python -m pytest tests/`. Jede Zahl in Hilfetexten, Presets und Tabellen ist in `tests/test_claims.py` belegt; die Kreuzprobe läuft gegen eine Brute-Force-Suche über alle Routen und ein naives Label-correcting (Netze mit Parallelkanten, Nullkosten, unerreichbaren Zielen und identischem Start und Ziel); ein Regressionstest klickt "▶️ Abspielen" auf Netzen mit mehreren Bildern.
+
+---
+
+Diese Demo ist Teil des Portfolios von [Sebastian Hanisch](https://sebastianhanisch.net) – Operations Research und Machine Learning ([Über mich](https://sebastianhanisch.net/ueber-mich.html)). Mehr zur Reihe: [Kürzeste Wege: von der Breitensuche bis RAPTOR](https://sebastianhanisch.net/konzepte-kuerzeste-wege.html).
